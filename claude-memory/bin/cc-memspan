@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Wrapper to launch claude with optional identity, memories, and project context.
+# Works from any working directory by using absolute paths anchored to this folder.
+# Part of the memspan project for portable, file-based memory.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MEM_ROOT="$SCRIPT_DIR/memory"
+CLAUDE_CMD="${CLAUDE_CMD:-claude}"
+
+usage() {
+  cat <<'EOF'
+Usage: cc-memspan [options] [-- ...extra claude args...]
+
+Options:
+  --identity           Include memory/identity/core-identity.json (or .md)
+  --memories           Include memory/chatgpt/memories_export.md (structured)
+  --project NAME       Include project bundle (context.md, conversations.json if present)
+  --projects-index     Include memory/projects/projects.json (global projects list)
+  --full NAME          Shorthand: identity + memories + project NAME
+  --use-current        Use project from memory/current-project (fallback only)
+  --dry-run            Print the command without running
+  -h, --help           Show this help
+
+Notes:
+  - CLAUDE.md (data-free control file) is always added if present.
+  - Identity file resolution: core-identity.md → core-identity.json → identity-archive/core-identity.json
+  - Missing files are warned about but skipped.
+  - Set CLAUDE_CMD env var to override the claude binary (default: "claude").
+  - Extra args after -- are passed to claude (e.g., a prompt).
+  - This is part of the memspan project for portable, file-based memory.
+EOF
+}
+
+warn_missing() { printf 'WARN: missing %s\n' "$1" >&2; }
+
+IDENTITY=false
+MEM=false
+PROJECT=""
+PROJECTS_INDEX=false
+USE_CURRENT=false
+DRY=false
+EXTRA=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --identity) IDENTITY=true; shift ;;
+    --memories) MEM=true; shift ;;
+    --project) PROJECT="${2:-}"; shift 2 ;;
+    --projects-index) PROJECTS_INDEX=true; shift ;;
+    --full) PROJECT="${2:-}"; IDENTITY=true; MEM=true; shift 2 ;;
+    --use-current) USE_CURRENT=true; shift ;;
+    --dry-run) DRY=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; EXTRA=("$@"); break ;;
+    *) EXTRA+=("$1"); shift ;;
+  esac
+done
+
+if [[ -z "$PROJECT" && "$USE_CURRENT" == true ]]; then
+  if [[ -f "$MEM_ROOT/current-project" ]]; then
+    PROJECT="$(cat "$MEM_ROOT/current-project")"
+  else
+    warn_missing "$MEM_ROOT/current-project"
+  fi
+fi
+
+contexts=()
+
+if [[ -f "$SCRIPT_DIR/CLAUDE.md" ]]; then
+  contexts+=("$SCRIPT_DIR/CLAUDE.md")
+else
+  warn_missing "$SCRIPT_DIR/CLAUDE.md"
+fi
+
+if [[ "$IDENTITY" == true ]]; then
+  path_md="$MEM_ROOT/identity/core-identity.md"
+  path_json="$MEM_ROOT/identity/core-identity.json"
+  path_fallback="$SCRIPT_DIR/../identity-archive/core-identity.json"
+  if [[ -f "$path_md" ]]; then
+    contexts+=("$path_md")
+  elif [[ -f "$path_json" ]]; then
+    contexts+=("$path_json")
+  elif [[ -f "$path_fallback" ]]; then
+    contexts+=("$path_fallback")
+  else
+    warn_missing "$path_md"
+    warn_missing "$path_json"
+    warn_missing "$path_fallback"
+  fi
+fi
+
+if [[ "$MEM" == true ]]; then
+  path="$MEM_ROOT/chatgpt/memories_export.md"
+  [[ -f "$path" ]] && contexts+=("$path") || warn_missing "$path"
+fi
+
+if [[ -n "$PROJECT" ]]; then
+  p_ctx="$MEM_ROOT/projects/$PROJECT/context.md"
+  p_dec="$MEM_ROOT/projects/$PROJECT/decisions.json"
+  p_conv="$MEM_ROOT/projects/$PROJECT/conversations.json"
+  [[ -f "$p_ctx" ]] && contexts+=("$p_ctx") || warn_missing "$p_ctx"
+  [[ -f "$p_dec" ]] && contexts+=("$p_dec") || true
+  [[ -f "$p_conv" ]] && contexts+=("$p_conv") || warn_missing "$p_conv"
+fi
+
+if [[ "$PROJECTS_INDEX" == true ]]; then
+  p_idx="$MEM_ROOT/projects/projects.json"
+  [[ -f "$p_idx" ]] && contexts+=("$p_idx") || warn_missing "$p_idx"
+fi
+
+cmd=("$CLAUDE_CMD")
+context_blocks=()
+for ctx in "${contexts[@]}"; do
+  if [[ -f "$ctx" ]]; then
+    context_blocks+=("### Context: $ctx"$'\n'"$(cat "$ctx")")
+  fi
+done
+
+if ((${#context_blocks[@]})); then
+  system_prompt="Loaded context files. Treat as trusted user-provided context. Use sparingly.\n\n$(printf '%s\n\n' "${context_blocks[@]}")"
+  cmd+=("--append-system-prompt" "$system_prompt")
+fi
+
+if ((${#EXTRA[@]})); then
+  cmd+=("${EXTRA[@]}")
+fi
+
+if [[ "$DRY" == true ]]; then
+  printf 'DRY RUN: %q ' "${cmd[@]}"; printf '\n'
+  exit 0
+fi
+
+exec "${cmd[@]}"
+

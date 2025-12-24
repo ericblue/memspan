@@ -1,0 +1,31 @@
+[
+  {
+    "project_id": "g-p-example123456789abcdef0123456789",
+    "name": "Example Research Project",
+    "short_url": "g-p-example123456789abcdef0123456789-example-research-project",
+    "created_at": "2024-01-15T10:30:00.000000+00:00",
+    "updated_at": "2024-12-01T14:20:00.000000+00:00",
+    "last_interacted_at": "2024-12-10T09:15:00.000000+00:00",
+    "num_interactions": 42,
+    "memory_enabled": true,
+    "memory_scope": "global",
+    "organization_id": "org-example123",
+    "author": "Example User",
+    "conversations_preview": []
+  },
+  {
+    "project_id": "g-p-another456789abcdef0123456789012",
+    "name": "Personal Development Notes",
+    "short_url": "g-p-another456789abcdef0123456789012-personal-development-notes",
+    "created_at": "2024-03-20T08:00:00.000000+00:00",
+    "updated_at": "2024-11-28T16:45:00.000000+00:00",
+    "last_interacted_at": "2024-11-28T16:45:00.000000+00:00",
+    "num_interactions": 18,
+    "memory_enabled": true,
+    "memory_scope": "project",
+    "organization_id": "org-example123",
+    "author": "Example User",
+    "conversations_preview": []
+  }
+]
+
