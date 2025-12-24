@@ -134,6 +134,8 @@ htmlcov/
 .dmypy.json
 dmypy.json
 
+/docs/internal
+
 # Memory/Archive directories (may contain personal data)
 # Uncomment if you want to ignore these:
 # claude-memory/memory/claude/entries/*
@@ -144,4 +146,6 @@ dmypy.json
 
 # Keep README files in memory directories
 !**/README.md
+
+
 

@@ -17,7 +17,7 @@ Place your identity file here as `core-identity.json` (or `core-identity.md`).
 
 - **Extraction instructions**: See `identity-archive/README.md`
 - **Quick start guide**: See `docs/QUICKSTART.md`
-- **Usage**: Load with `cc-memspan --identity` or `make context-identity`
+- **Usage**: Load with `cc-memspan --identity` or `make memspan-identity`
 
 
 

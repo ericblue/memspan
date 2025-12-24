@@ -1,4 +1,4 @@
-.PHONY: help setup check status validate identity-prompt identity-check identity-validate memories-check projects-list context-identity context-full context-check aliases-show aliases-install clean
+.PHONY: help setup check status validate identity-prompt identity-check identity-validate memories-check projects-list memspan-identity memspan-identity-memories memspan-projects-index memspan-full memspan-check aliases-show aliases-install clean
 
 # Variables
 MEMSPAN_ROOT := $(shell pwd)
@@ -22,11 +22,13 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Examples:"
-	@echo "  make setup              # Create directory structure"
-	@echo "  make check              # Check prerequisites"
-	@echo "  make status             # Show status of all memory files"
-	@echo "  make context-identity   # Launch Claude with identity"
-	@echo "  make context-full PROJECT=mindjot  # Launch with full context"
+	@echo "  make setup                        # Create directory structure"
+	@echo "  make check                        # Check prerequisites"
+	@echo "  make status                       # Show status of all memory files"
+	@echo "  make memspan-identity             # Launch Claude with identity"
+	@echo "  make memspan-identity-memories    # Launch with identity + memories (recommended)"
+	@echo "  make memspan-projects-index       # Launch with identity + memories + projects index"
+	@echo "  make memspan-full PROJECT=mindjot  # Launch with full context"
 
 setup: ## Create directory structure for memory files (idempotent)
 	@if [ ! -d $(IDENTITY_DIR) ] || [ ! -d $(MEMORIES_DIR) ] || [ ! -d $(PROJECTS_DIR) ] || [ ! -d $(MEMORY_ROOT)/claude/entries ]; then \
@@ -106,8 +108,8 @@ identity-prompt: ## Show location of identity extraction prompt
 identity-check: ## Check if identity file exists
 	@if test -f $(IDENTITY_DIR)/core-identity.json || test -f $(IDENTITY_DIR)/core-identity.md; then \
 		echo "$(GREEN)✓ Identity file found$(NC)"; \
-		test -f $(IDENTITY_DIR)/core-identity.json && echo "  Location: $(IDENTITY_DIR)/core-identity.json"; \
-		test -f $(IDENTITY_DIR)/core-identity.md && echo "  Location: $(IDENTITY_DIR)/core-identity.md"; \
+		test -f $(IDENTITY_DIR)/core-identity.json && echo "  Location: $(IDENTITY_DIR)/core-identity.json" || true; \
+		test -f $(IDENTITY_DIR)/core-identity.md && echo "  Location: $(IDENTITY_DIR)/core-identity.md" || true; \
 	else \
 		echo "$(RED)✗ Identity file not found$(NC)"; \
 		echo "  Expected: $(IDENTITY_DIR)/core-identity.json or .md"; \
@@ -155,14 +157,22 @@ projects-list: ## List available projects
 	fi
 	@echo ""
 
-context-identity: identity-check ## Launch Claude with identity context
+memspan-identity: identity-check ## Launch Claude with identity context
 	@echo "$(GREEN)Launching Claude with identity...$(NC)"
 	@bash $(CC_MEMSPAN) --identity
 
-context-full: identity-check ## Launch Claude with full context (requires PROJECT=name)
+memspan-identity-memories: identity-check ## Launch Claude with identity and memories (recommended starting point)
+	@echo "$(GREEN)Launching Claude with identity and memories...$(NC)"
+	@bash $(CC_MEMSPAN) --identity --memories
+
+memspan-projects-index: identity-check ## Launch Claude with identity, memories, and projects index (lightweight project awareness)
+	@echo "$(GREEN)Launching Claude with identity, memories, and projects index...$(NC)"
+	@bash $(CC_MEMSPAN) --identity --memories --projects-index
+
+memspan-full: identity-check ## Launch Claude with full context (requires PROJECT=name)
 	@if [ -z "$(PROJECT)" ]; then \
 		echo "$(RED)Error: PROJECT not specified$(NC)"; \
-		echo "Usage: make context-full PROJECT=project-name"; \
+		echo "Usage: make memspan-full PROJECT=project-name"; \
 		echo ""; \
 		echo "Available projects:"; \
 		$(MAKE) projects-list; \
@@ -171,9 +181,9 @@ context-full: identity-check ## Launch Claude with full context (requires PROJEC
 	@echo "$(GREEN)Launching Claude with full context for project: $(PROJECT)$(NC)"
 	@bash $(CC_MEMSPAN) --full $(PROJECT)
 
-context-check: ## Check what context files would be loaded
-	@echo "$(GREEN)Context File Check$(NC)"
-	@echo "==================="
+memspan-check: ## Check what context files would be loaded
+	@echo "$(GREEN)Memspan Context File Check$(NC)"
+	@echo "=============================="
 	@echo ""
 	@echo "Files that would be loaded:"
 	@bash $(CC_MEMSPAN) --identity --memories --dry-run 2>&1 | grep -E "(WARN|Context)" || true

@@ -168,6 +168,11 @@ bash claude-memory/bin/cc-memspan --identity --memories
 bash claude-memory/bin/cc-memspan --identity --memories --projects-index
 ```
 
+Or using the Makefile:
+```bash
+make memspan-projects-index
+```
+
 **Full Project Context (Higher Token Usage):**
 ```bash
 # Load specific project with full context (context.md, conversations.json)
@@ -195,8 +200,8 @@ make status
 make identity-prompt
 
 # Launch Claude with context
-make context-identity
-make context-full PROJECT=project-name
+make memspan-identity
+make memspan-full PROJECT=project-name
 
 # Show and install shell aliases
 make aliases-show

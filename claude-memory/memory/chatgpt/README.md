@@ -16,7 +16,7 @@ Place your structured memory export here as `memories_export.md` (or `memories_e
 
 - **Extraction instructions**: See `export-chatgpt-memories/README.md`
 - **Quick start guide**: See `docs/QUICKSTART.md`
-- **Usage**: Load with `cc-memspan --memories` or `make context-identity` (with memories)
+- **Usage**: Load with `cc-memspan --memories` or `make memspan-identity-memories`
 
 
 
